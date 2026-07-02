@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --font-inter: "Inter", system-ui, -apple-system, sans-serif;
+  --font-fraunces: "Fraunces", Georgia, "Times New Roman", serif;
+}
+
+body {
+  background: #FAF7F2;
+  color: #211E1A;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ledger-rule underline used on section headers */
+.rule::after {
+  content: "";
+  display: block;
+  height: 1px;
+  background: #DCD3C3;
+  margin-top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
