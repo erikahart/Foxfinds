@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, PlusCircle, Package, Tags, CalendarCheck, MessageCircle, Settings, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, PlusCircle, Package, Tags, CalendarCheck, MessageCircle, Settings, ExternalLink, LogOut, Menu, X } from "lucide-react";
 import { signOut } from "@/app/actions";
 
 const NAV = [
@@ -58,6 +58,14 @@ export default function Sidebar({ shop, logoUrl }: { shop: string; logoUrl?: str
 
   const Footer = () => (
     <div className="border-t border-line p-3">
+      
+        href="/shop"
+        target="_blank"
+        rel="noreferrer"
+        className="mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ink-soft hover:bg-paper-sunk"
+      >
+        <ExternalLink size={17} /> View shop
+      </a>
       <div className="mb-2 px-3 text-xs text-ink-muted">
         <div className="font-medium text-ink-soft">{shop}</div>
       </div>
