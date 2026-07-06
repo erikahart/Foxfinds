@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { money } from "@/lib/format";
+import { getSellerLogoUrl } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -59,12 +60,18 @@ async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, st
 
 export default async function ShopPage() {
   const { items, urls, reserved } = await getListed();
+  const logoUrl = await getSellerLogoUrl();
 
   return (
     <main className="min-h-screen">
       <header className="border-b border-line bg-paper-raised">
         <div className="mx-auto flex max-w-5xl items-center gap-2 px-6 py-5 font-display text-xl font-semibold">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink text-fox">✦</span>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain" />
+          ) : (
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink text-fox">✦</span>
+          )}
           Fox Finds
         </div>
       </header>
