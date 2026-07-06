@@ -6,8 +6,8 @@ import { money } from "@/lib/format";
 import { Sparkles, Copy, Check } from "lucide-react";
 
 export default function ListingsWorkbench({
-  items, initialListings,
-}: { items: Item[]; initialListings: Listing[] }) {
+  items, initialListings, photoUrls = {},
+}: { items: Item[]; initialListings: Listing[]; photoUrls?: Record<string, string> }) {
   const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null);
   const [listings, setListings] = useState<Listing[]>(initialListings);
   const [busy, setBusy] = useState<Marketplace | null>(null);
@@ -52,14 +52,22 @@ export default function ListingsWorkbench({
           <button
             key={i.id}
             onClick={() => setSelectedId(i.id)}
-            className={`w-full rounded-lg border px-3 py-2.5 text-left text-sm ${
+            className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left ${
               selectedId === i.id ? "border-ink bg-ink text-paper" : "border-line bg-paper-raised hover:bg-paper-sunk"
             }`}
           >
-            <div className="line-clamp-1 font-medium">{i.title}</div>
-            <div className={`text-xs ${selectedId === i.id ? "text-paper/70" : "text-ink-muted"}`}>
-              {money(i.suggested_price)}
-            </div>
+            <span className={`h-10 w-10 flex-shrink-0 overflow-hidden rounded-md ${selectedId === i.id ? "bg-paper/20" : "bg-paper-sunk"}`}>
+              {i.image_path && photoUrls[i.image_path] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoUrls[i.image_path]} alt="" className="h-full w-full object-cover" />
+              ) : null}
+            </span>
+            <span className="min-w-0">
+              <span className="block line-clamp-1 text-sm font-medium">{i.title}</span>
+              <span className={`block text-xs ${selectedId === i.id ? "text-paper/70" : "text-ink-muted"}`}>
+                {money(i.suggested_price)}
+              </span>
+            </span>
           </button>
         ))}
       </div>
@@ -67,6 +75,21 @@ export default function ListingsWorkbench({
       {/* Generator */}
       <div>
         {error && <p className="mb-4 rounded-lg bg-ember-tint px-4 py-2.5 text-sm text-ember">{error}</p>}
+
+        {selected && (
+          <div className="mb-5 flex items-center gap-3 rounded-xl2 border border-line bg-paper-raised p-4 shadow-card">
+            <span className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-paper-sunk">
+              {selected.image_path && photoUrls[selected.image_path] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoUrls[selected.image_path]} alt="" className="h-full w-full object-cover" />
+              ) : null}
+            </span>
+            <div className="min-w-0">
+              <div className="line-clamp-1 font-medium">{selected.title}</div>
+              <div className="text-sm text-ink-muted">{money(selected.suggested_price)}</div>
+            </div>
+          </div>
+        )}
 
         <div className="mb-5 rounded-xl2 border border-line bg-paper-raised p-4 shadow-card">
           <div className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-muted">
