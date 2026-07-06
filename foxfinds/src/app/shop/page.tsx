@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { money } from "@/lib/format";
 
@@ -14,7 +15,7 @@ type ShopItem = {
   image_path: string | null;
 };
 
-async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, string> }> {
+async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, string>; reserved: Set<string> }> {
   try {
     const admin = createAdminClient();
     const { data } = await admin
@@ -30,14 +31,24 @@ async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, st
       const { data: signed } = await admin.storage.from("item-photos").createSignedUrls(paths, 3600);
       signed?.forEach((s) => { if (s.path && s.signedUrl) urls[s.path] = s.signedUrl; });
     }
-    return { items, urls };
+
+    const reserved = new Set<string>();
+    if (items.length) {
+      const { data: res } = await admin
+        .from("reservations")
+        .select("item_id,status")
+        .in("item_id", items.map((i) => i.id))
+        .in("status", ["pending", "confirmed"]);
+      res?.forEach((r) => reserved.add((r as { item_id: string }).item_id));
+    }
+    return { items, urls, reserved };
   } catch {
-    return { items: [], urls: {} };
+    return { items: [], urls: {}, reserved: new Set() };
   }
 }
 
 export default async function ShopPage() {
-  const { items, urls } = await getListed();
+  const { items, urls, reserved } = await getListed();
 
   return (
     <main className="min-h-screen">
@@ -62,13 +73,16 @@ export default async function ShopPage() {
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
             {items.map((i) => (
-              <article key={i.id} className="overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card">
-                <div className="aspect-square bg-paper-sunk">
+              <Link key={i.id} href={`/shop/${i.id}`} className="group block overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card transition-colors hover:border-line-strong">
+                <div className="relative aspect-square bg-paper-sunk">
                   {i.image_path && urls[i.image_path] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={urls[i.image_path]} alt={i.title} className="h-full w-full object-cover" />
                   ) : (
                     <div className="grid h-full place-items-center text-ink-muted">No photo</div>
+                  )}
+                  {reserved.has(i.id) && (
+                    <span className="absolute left-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-xs font-medium text-paper">Reserved</span>
                   )}
                 </div>
                 <div className="p-4">
@@ -79,14 +93,14 @@ export default async function ShopPage() {
                   {i.condition && <div className="mt-1 text-xs uppercase tracking-wide text-fox-deep">{i.condition}</div>}
                   {i.description && <p className="mt-2 line-clamp-3 text-sm text-ink-muted">{i.description}</p>}
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         )}
       </section>
 
       <footer className="mx-auto max-w-5xl px-6 py-10 text-sm text-ink-muted">
-        Reservations &amp; messaging coming soon.
+        Reserve any piece for pickup — just tap it.
       </footer>
     </main>
   );
