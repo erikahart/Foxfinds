@@ -34,19 +34,6 @@ export default function ReserveBox({
     setPhase("code");
   }
 
-  async function verifyCode(e: React.FormEvent) {
-    e.preventDefault();
-    setPhase("verifying"); setError(null);
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: emailInput,
-      token: code.trim(),
-      type: "email",
-    });
-    if (error || !data.user) { setError(error?.message ?? "That code didn't work. Try again."); setPhase("code"); return; }
-    setEmail(data.user.email ?? emailInput);
-    setPhase("idle");
-  }
-
 async function verifyCode(e: React.FormEvent) {
     e.preventDefault();
     setPhase("verifying"); setError(null);
