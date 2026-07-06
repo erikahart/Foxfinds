@@ -20,7 +20,7 @@ export default async function DashboardPage() {
     { label: "In inventory", value: String(active.length) },
     { label: "Est. shelf value", value: money(estValue) },
     { label: "Items sold", value: String(sold.length) },
-    { label: "Profit to date", value: money(profit), accent: true },
+    { label: "Profit to date", value: money(profit), tone: profit < 0 ? "text-ember" : "text-moss" },
   ];
 
   return (
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
             <div className="text-xs uppercase tracking-wide text-ink-muted">{s.label}</div>
-            <div className={`mt-2 font-display text-3xl font-semibold ${s.accent ? "text-moss" : ""}`}>{s.value}</div>
+            <div className={`mt-2 font-display text-3xl font-semibold ${s.tone ?? ""}`}>{s.value}</div>
           </div>
         ))}
       </div>
