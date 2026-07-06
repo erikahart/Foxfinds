@@ -25,6 +25,19 @@ export default async function InventoryPage({
   const items = status && status !== "all" ? all.filter((i) => i.status === status) : all;
   const urls = await signedPhotoUrls(supabase as never, items.map((i) => i.image_path));
 
+  // Group by category
+  const groups = new Map<string, Item[]>();
+  for (const i of items) {
+    const key = i.category?.trim() || "Uncategorized";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(i);
+  }
+  const sortedGroups = [...groups.entries()].sort((a, b) => {
+    if (a[0] === "Uncategorized") return 1;
+    if (b[0] === "Uncategorized") return -1;
+    return a[0].localeCompare(b[0]);
+  });
+
   return (
     <>
       <div className="mb-6 flex items-end justify-between">
@@ -37,7 +50,7 @@ export default async function InventoryPage({
         </Link>
       </div>
 
-      <div className="mb-5 flex gap-2">
+      <div className="mb-6 flex gap-2">
         {FILTERS.map((f) => {
           const active = (status ?? "all") === f.key;
           return (
@@ -59,26 +72,35 @@ export default async function InventoryPage({
           Nothing here yet.
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-          {items.map((i) => (
-            <Link key={i.id} href={`/inventory/${i.id}`} className="block overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card transition-colors hover:border-line-strong">
-              <div className="aspect-square bg-paper-sunk">
-                {i.image_path && urls[i.image_path] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={urls[i.image_path]} alt={i.title} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="grid h-full place-items-center text-ink-muted">No photo</div>
-                )}
+        <div className="space-y-10">
+          {sortedGroups.map(([cat, group]) => (
+            <section key={cat}>
+              <div className="rule mb-4 flex items-baseline gap-2">
+                <h2 className="font-display text-lg font-semibold">{cat}</h2>
+                <span className="text-sm text-ink-muted">{group.length}</span>
               </div>
-              <div className="p-3.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="line-clamp-2 text-sm font-medium">{i.title}</div>
-                  <StatusBadge status={i.status} />
-                </div>
-                <div className="mt-1 text-xs text-ink-muted">{i.category ?? "Uncategorized"}</div>
-                <div className="mt-2 font-display text-xl font-semibold">{money(i.suggested_price)}</div>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                {group.map((i) => (
+                  <Link key={i.id} href={`/inventory/${i.id}`} className="block overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card transition-colors hover:border-line-strong">
+                    <div className="aspect-square bg-paper-sunk">
+                      {i.image_path && urls[i.image_path] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={urls[i.image_path]} alt={i.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="grid h-full place-items-center text-ink-muted">No photo</div>
+                      )}
+                    </div>
+                    <div className="p-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="line-clamp-2 text-sm font-medium">{i.title}</div>
+                        <StatusBadge status={i.status} />
+                      </div>
+                      <div className="mt-2 font-display text-xl font-semibold">{money(i.suggested_price)}</div>
+                    </div>
+                  </Link>
+                ))}
               </div>
-            </Link>
+            </section>
           ))}
         </div>
       )}
