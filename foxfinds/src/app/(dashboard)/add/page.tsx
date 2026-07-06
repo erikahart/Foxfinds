@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Analysis } from "@/types";
 import { Upload, Sparkles, RotateCcw, Check } from "lucide-react";
@@ -92,7 +93,12 @@ export default function AddFindPage() {
   return (
     <>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fox-deep">Cataloguing</p>
-      <h1 className="mb-6 font-display text-3xl font-semibold">Add a find</h1>
+      <div className="mb-6 flex items-end justify-between">
+        <h1 className="font-display text-3xl font-semibold">Add a find</h1>
+        <Link href="/add/bulk" className="text-sm text-fox-deep underline underline-offset-4 hover:text-ink">
+          Got a whole haul? Add several &rarr;
+        </Link>
+      </div>
 
       {error && <p className="mb-4 rounded-lg bg-ember-tint px-4 py-2.5 text-sm text-ember">{error}</p>}
 
