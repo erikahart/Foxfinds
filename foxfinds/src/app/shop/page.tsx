@@ -16,23 +16,33 @@ type ShopItem = {
 };
 
 async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, string>; reserved: Set<string> }> {
+  const urls: Record<string, string> = {};
+  const reserved = new Set<string>();
+  let items: ShopItem[] = [];
+
+  let admin;
+  try { admin = createAdminClient(); } catch { return { items, urls, reserved }; }
+
   try {
-    const admin = createAdminClient();
     const { data } = await admin
       .from("items")
       .select("id,title,category,brand,condition,description,suggested_price,image_path,created_at,status")
       .eq("status", "listed")
       .order("created_at", { ascending: false });
-    const items = (data ?? []) as ShopItem[];
+    items = (data ?? []) as ShopItem[];
+  } catch {
+    return { items, urls, reserved };
+  }
 
+  try {
     const paths = items.map((i) => i.image_path).filter((p): p is string => !!p);
-    const urls: Record<string, string> = {};
     if (paths.length) {
       const { data: signed } = await admin.storage.from("item-photos").createSignedUrls(paths, 3600);
       signed?.forEach((s) => { if (s.path && s.signedUrl) urls[s.path] = s.signedUrl; });
     }
+  } catch { /* show items without photos rather than nothing */ }
 
-    const reserved = new Set<string>();
+  try {
     if (items.length) {
       const { data: res } = await admin
         .from("reservations")
@@ -41,10 +51,9 @@ async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, st
         .in("status", ["pending", "confirmed"]);
       res?.forEach((r) => reserved.add((r as { item_id: string }).item_id));
     }
-    return { items, urls, reserved };
-  } catch {
-    return { items: [], urls: {}, reserved: new Set() };
-  }
+  } catch { /* no reservation badges, but items still show */ }
+
+  return { items, urls, reserved };
 }
 
 export default async function ShopPage() {
