@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PlusCircle, Package, Tags, CalendarCheck, LogOut } from "lucide-react";
+import { LayoutDashboard, PlusCircle, Package, Tags, CalendarCheck, MessageCircle, LogOut } from "lucide-react";
 import { signOut } from "@/app/actions";
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/listings", label: "Listings", icon: Tags },
   { href: "/reservations", label: "Reservations", icon: CalendarCheck },
+  { href: "/messages", label: "Messages", icon: MessageCircle },
 ];
 
 export default function Sidebar({ shop }: { shop: string }) {

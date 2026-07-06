@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { money } from "@/lib/format";
 import ReserveBox from "@/components/ReserveBox";
+import ChatBox from "@/components/ChatBox";
 import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,10 @@ export default async function ShopItemPage({ params }: { params: Promise<{ id: s
 
             <div className="mt-6">
               <ReserveBox itemId={item.id} itemTitle={item.title} alreadyReserved={reserved} />
+            </div>
+
+            <div className="mt-4">
+              <ChatBox itemId={item.id} itemTitle={item.title} />
             </div>
           </div>
         </div>
