@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
+const PUBLIC_PATHS = ["/login", "/auth", "/shop"];
 
 /** Refreshes the auth session on every request and guards private routes. */
 export async function updateSession(request: NextRequest) {
