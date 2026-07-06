@@ -8,7 +8,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
-    .from("profiles").select("business_name").eq("id", user.id).single();
+    .from("profiles").select("business_name, is_seller").eq("id", user.id).single();
+
+  if (profile && profile.is_seller === false) redirect("/shop");
 
   return (
     <div className="flex h-screen overflow-hidden">
