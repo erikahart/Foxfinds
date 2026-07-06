@@ -11,7 +11,7 @@ type Msg = {
   sender_role: "customer" | "seller";
   body: string;
   created_at: string;
-  items: { title: string } | null;
+  items: { title: string; image_path: string | null } | null;
 };
 
 type Thread = {
@@ -19,6 +19,7 @@ type Thread = {
   itemId: string;
   customerId: string;
   itemTitle: string;
+  itemImagePath: string | null;
   customerEmail: string;
   msgs: Msg[];
   last: string;
@@ -31,12 +32,26 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [urls, setUrls] = useState<Record<string, string>>({});
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  async function signMissing(paths: string[]) {
+    const need = paths.filter((p) => p && !urls[p]);
+    if (!need.length) return;
+    const { data } = await supabase.storage.from("item-photos").createSignedUrls(need, 3600);
+    if (data) {
+      setUrls((prev) => {
+        const next = { ...prev };
+        data.forEach((d) => { if (d.path && d.signedUrl) next[d.path] = d.signedUrl; });
+        return next;
+      });
+    }
+  }
 
   async function load() {
     const { data } = await supabase
       .from("messages")
-      .select("id,item_id,customer_id,customer_email,sender_role,body,created_at,items(title)")
+      .select("id,item_id,customer_id,customer_email,sender_role,body,created_at,items(title,image_path)")
       .order("created_at", { ascending: true });
     const rows = (data ?? []) as unknown as Msg[];
 
@@ -47,6 +62,7 @@ export default function MessagesPage() {
         map.set(key, {
           key, itemId: m.item_id, customerId: m.customer_id,
           itemTitle: m.items?.title ?? "Item",
+          itemImagePath: m.items?.image_path ?? null,
           customerEmail: m.customer_email ?? "Customer",
           msgs: [], last: m.created_at,
         });
@@ -60,6 +76,7 @@ export default function MessagesPage() {
     setThreads(list);
     setActiveKey((prev) => prev ?? list[0]?.key ?? null);
     setLoading(false);
+    signMissing(list.map((t) => t.itemImagePath).filter((p): p is string => !!p));
   }
 
   useEffect(() => {
@@ -88,6 +105,8 @@ export default function MessagesPage() {
     setSending(false);
   }
 
+  const activeUrl = active?.itemImagePath ? urls[active.itemImagePath] : undefined;
+
   return (
     <>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fox-deep">The counter</p>
@@ -100,22 +119,42 @@ export default function MessagesPage() {
           No messages yet. When a customer messages you about a piece, the conversation shows up here.
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-[minmax(0,260px)_1fr]">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_1fr]">
           <div className="space-y-1.5">
-            {threads.map((t) => (
-              <button key={t.key} onClick={() => setActiveKey(t.key)}
-                className={`w-full rounded-lg border px-3 py-2.5 text-left ${activeKey === t.key ? "border-ink bg-ink text-paper" : "border-line bg-paper-raised hover:bg-paper-sunk"}`}>
-                <div className="line-clamp-1 text-sm font-medium">{t.itemTitle}</div>
-                <div className={`line-clamp-1 text-xs ${activeKey === t.key ? "text-paper/70" : "text-ink-muted"}`}>{t.customerEmail}</div>
-              </button>
-            ))}
+            {threads.map((t) => {
+              const u = t.itemImagePath ? urls[t.itemImagePath] : undefined;
+              const on = activeKey === t.key;
+              return (
+                <button key={t.key} onClick={() => setActiveKey(t.key)}
+                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left ${on ? "border-ink bg-ink text-paper" : "border-line bg-paper-raised hover:bg-paper-sunk"}`}>
+                  <span className={`h-10 w-10 flex-shrink-0 overflow-hidden rounded-md ${on ? "bg-paper/20" : "bg-paper-sunk"}`}>
+                    {u ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={u} alt="" className="h-full w-full object-cover" />
+                    ) : null}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block line-clamp-1 text-sm font-medium">{t.itemTitle}</span>
+                    <span className={`block line-clamp-1 text-xs ${on ? "text-paper/70" : "text-ink-muted"}`}>{t.customerEmail}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {active && (
             <div className="flex flex-col rounded-xl2 border border-line bg-paper-raised shadow-card">
-              <div className="border-b border-line px-4 py-3">
-                <div className="text-sm font-medium">{active.itemTitle}</div>
-                <a href={`mailto:${active.customerEmail}`} className="text-xs text-fox-deep underline underline-offset-2">{active.customerEmail}</a>
+              <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+                <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-md bg-paper-sunk">
+                  {activeUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={activeUrl} alt="" className="h-full w-full object-cover" />
+                  ) : null}
+                </span>
+                <div className="min-w-0">
+                  <div className="line-clamp-1 text-sm font-medium">{active.itemTitle}</div>
+                  <a href={`mailto:${active.customerEmail}`} className="text-xs text-fox-deep underline underline-offset-2">{active.customerEmail}</a>
+                </div>
               </div>
               <div className="max-h-96 flex-1 space-y-2 overflow-y-auto p-4">
                 {active.msgs.map((m) => (

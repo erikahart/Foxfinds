@@ -5,7 +5,7 @@ import { Loader2, Send, Mail, KeyRound } from "lucide-react";
 
 type Msg = { id: string; sender_role: "customer" | "seller"; body: string; created_at: string };
 
-export default function ChatBox({ itemId, itemTitle }: { itemId: string; itemTitle: string }) {
+export default function ChatBox({ itemId, itemTitle, photoUrl }: { itemId: string; itemTitle: string; photoUrl?: string | null }) {
   const supabase = createClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -116,7 +116,13 @@ export default function ChatBox({ itemId, itemTitle }: { itemId: string; itemTit
 
   return (
     <div className="rounded-xl2 border border-line bg-paper-raised shadow-card">
-      <div className="border-b border-line px-4 py-3 text-sm font-medium">Chat about “{itemTitle}”</div>
+      <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+        {photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" className="h-9 w-9 flex-shrink-0 rounded-md object-cover" />
+        ) : null}
+        <div className="text-sm font-medium">Chat about “{itemTitle}”</div>
+      </div>
       <div className="max-h-80 space-y-2 overflow-y-auto p-4">
         {msgs.length === 0 ? (
           <p className="text-sm text-ink-muted">No messages yet. Say hello and ask anything about this piece.</p>

@@ -73,7 +73,7 @@ export default async function ShopItemPage({ params }: { params: Promise<{ id: s
             </div>
 
             <div className="mt-4">
-              <ChatBox itemId={item.id} itemTitle={item.title} />
+              <ChatBox itemId={item.id} itemTitle={item.title} photoUrl={photo} />
             </div>
           </div>
         </div>
