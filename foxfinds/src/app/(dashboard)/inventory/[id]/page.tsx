@@ -24,6 +24,7 @@ export default function ItemDetailPage() {
   const [item, setItem] = useState<Item | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [soldPrice, setSoldPrice] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +41,13 @@ export default function ItemDetailPage() {
       if (it.image_path) {
         const { data: signed } = await supabase.storage.from("item-photos").createSignedUrl(it.image_path, 3600);
         if (active) setPhoto(signed?.signedUrl ?? null);
+      }
+      const { data: cats } = await supabase.from("items").select("category");
+      if (active) {
+        const distinct = Array.from(
+          new Set((cats ?? []).map((c) => (c as { category: string | null }).category).filter((v): v is string => !!v && v.trim() !== "")),
+        ).sort();
+        setCategories(distinct);
       }
       setLoading(false);
     })();
@@ -155,7 +163,7 @@ export default function ItemDetailPage() {
           <div className="space-y-4 rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
             <Field label="Title"><input className={inp} value={item.title} onChange={(e) => set("title", e.target.value)} /></Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Category"><input className={inp} value={item.category ?? ""} onChange={(e) => set("category", e.target.value)} /></Field>
+              <Field label="Category"><CategoryField value={item.category ?? ""} options={categories} onChange={(v) => set("category", v)} /></Field>
               <Field label="Brand"><input className={inp} value={item.brand ?? ""} onChange={(e) => set("brand", e.target.value)} /></Field>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -195,3 +203,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+
+function CategoryField({
+  value, options, onChange,
+}: { value: string; options: string[]; onChange: (v: string) => void }) {
+  const [adding, setAdding] = useState(false);
+  const all = Array.from(new Set([...options, value].filter((v) => v && v.trim() !== ""))).sort();
+
+  if (adding) {
+    return (
+      <div className="flex items-center gap-2">
+        <input autoFocus className={inp}
