@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { money } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type ShopItem = {
   id: string;
