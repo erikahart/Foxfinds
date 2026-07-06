@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Check, Mail } from "lucide-react";
+import { Loader2, Check, Mail, KeyRound } from "lucide-react";
 
 export default function ReserveBox({
   itemId, itemTitle, alreadyReserved,
@@ -10,9 +10,10 @@ export default function ReserveBox({
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailInput, setEmailInput] = useState("");
+  const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
-  const [phase, setPhase] = useState<"idle" | "sending" | "sent" | "reserving" | "done">("idle");
+  const [phase, setPhase] = useState<"idle" | "sending" | "code" | "verifying" | "reserving" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,16 +23,28 @@ export default function ReserveBox({
     });
   }, [supabase]);
 
-  async function sendLink(e: React.FormEvent) {
+  async function sendCode(e: React.FormEvent) {
     e.preventDefault();
     setPhase("sending"); setError(null);
-    const redirect = `${window.location.origin}/auth/callback?next=${encodeURIComponent(`/shop/${itemId}`)}`;
     const { error } = await supabase.auth.signInWithOtp({
       email: emailInput,
-      options: { emailRedirectTo: redirect },
+      options: { shouldCreateUser: true },
     });
     if (error) { setError(error.message); setPhase("idle"); return; }
-    setPhase("sent");
+    setPhase("code");
+  }
+
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setPhase("verifying"); setError(null);
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: emailInput,
+      token: code.trim(),
+      type: "email",
+    });
+    if (error || !data.user) { setError(error?.message ?? "That code didn't work. Try again."); setPhase("code"); return; }
+    setEmail(data.user.email ?? emailInput);
+    setPhase("idle");
   }
 
   async function reserve() {
@@ -86,23 +99,31 @@ export default function ReserveBox({
     );
   }
 
-  if (phase === "sent") {
+  if (phase === "code" || phase === "verifying") {
     return (
-      <div className="rounded-xl2 border border-line bg-paper-raised p-5 text-sm shadow-card">
-        <div className="flex items-center gap-2 font-medium"><Mail size={16} className="text-fox-deep" /> Check your email</div>
-        <p className="mt-1 text-ink-muted">We sent a sign-in link to <span className="font-medium text-ink">{emailInput}</span>. Open it on this device and you&rsquo;ll come right back here to finish reserving.</p>
-      </div>
+      <form onSubmit={verifyCode} className="space-y-3 rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
+        <div className="flex items-center gap-2 text-sm font-medium"><KeyRound size={16} className="text-fox-deep" /> Enter your code</div>
+        <p className="text-sm text-ink-muted">We emailed a 6-digit code to <span className="font-medium text-ink">{emailInput}</span>. Enter it below.</p>
+        <input className={`${inp} tracking-[0.4em]`} inputMode="numeric" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} />
+        {error && <p className="text-sm text-ember">{error}</p>}
+        <button type="submit" disabled={phase === "verifying"} className="flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3 font-medium text-paper hover:bg-ink-soft disabled:opacity-60">
+          {phase === "verifying" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Verify & continue
+        </button>
+        <button type="button" onClick={() => { setPhase("idle"); setCode(""); setError(null); }} className="text-xs text-ink-muted hover:text-ink">
+          Use a different email
+        </button>
+      </form>
     );
   }
 
   return (
-    <form onSubmit={sendLink} className="space-y-3 rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
+    <form onSubmit={sendCode} className="space-y-3 rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
       <div className="text-sm font-medium">Reserve this for pickup</div>
-      <p className="text-sm text-ink-muted">Enter your email — we&rsquo;ll send a one-tap link, no password needed.</p>
+      <p className="text-sm text-ink-muted">Enter your email — we&rsquo;ll send a 6-digit code, no password needed.</p>
       <input className={inp} type="email" required placeholder="you@example.com" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} />
       {error && <p className="text-sm text-ember">{error}</p>}
       <button type="submit" disabled={phase === "sending"} className="flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3 font-medium text-paper hover:bg-ink-soft disabled:opacity-60">
-        {phase === "sending" ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />} Send my sign-in link
+        {phase === "sending" ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />} Email me a code
       </button>
     </form>
   );
