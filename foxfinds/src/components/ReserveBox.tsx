@@ -47,21 +47,18 @@ export default function ReserveBox({
     setPhase("idle");
   }
 
-  async function reserve() {
-    setPhase("reserving"); setError(null);
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData.user;
-    if (!user) { setError("Please sign in first."); setPhase("idle"); return; }
-    const { error } = await supabase.from("reservations").insert({
-      item_id: itemId,
-      customer_id: user.id,
-      customer_email: user.email,
-      customer_name: name || null,
-      pickup_note: note || null,
-      status: "pending",
-    });
-    if (error) { setError(error.message); setPhase("idle"); return; }
-    setPhase("done");
+async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setPhase("verifying"); setError(null);
+    const token = code.trim();
+    // New reservers verify as "signup"; returning ones as "email". Try both.
+    let res = await supabase.auth.verifyOtp({ email: emailInput, token, type: "email" });
+    if (res.error) {
+      res = await supabase.auth.verifyOtp({ email: emailInput, token, type: "signup" });
+    }
+    if (res.error || !res.data.user) { setError(res.error?.message ?? "That code didn't work. Try again."); setPhase("code"); return; }
+    setEmail(res.data.user.email ?? emailInput);
+    setPhase("idle");
   }
 
   if (alreadyReserved) {
