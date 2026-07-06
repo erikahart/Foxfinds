@@ -14,7 +14,11 @@ export default async function DashboardPage() {
   const active = items.filter((i) => i.status !== "sold" && i.status !== "archived");
   const sold = items.filter((i) => i.status === "sold");
   const estValue = active.reduce((s, i) => s + (i.suggested_price ?? 0), 0);
-  const profit = sold.reduce((s, i) => s + ((i.sold_price ?? 0) - (i.cost ?? 0)), 0);
+
+  const revenue = sold.reduce((s, i) => s + (i.sold_price ?? 0), 0);
+  const cogs = sold.reduce((s, i) => s + (i.cost ?? 0), 0);
+  const profit = revenue - cogs;
+  const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : null;
 
   const stats = [
     { label: "In inventory", value: String(active.length) },
@@ -44,6 +48,39 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {/* The books — all-time P&L */}
+      <div className="mt-8">
+        <h2 className="rule font-display text-lg font-semibold">The books</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-[1fr_240px]">
+          <div className="rounded-xl2 border border-line bg-paper-raised p-6 shadow-card">
+            <dl className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <dt className="text-ink-muted">Revenue (all-time)</dt>
+                <dd className="font-display text-lg">{money(revenue)}</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-ink-muted">Cost of goods sold</dt>
+                <dd className="font-display text-lg text-ink-muted">{revenue || cogs ? `-${money(cogs)}` : money(0)}</dd>
+              </div>
+              <div className="flex items-center justify-between border-t border-line pt-3">
+                <dt className="font-medium">Net profit</dt>
+                <dd className={`font-display text-2xl font-semibold ${profit < 0 ? "text-ember" : "text-moss"}`}>{money(profit)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="flex flex-col justify-center rounded-xl2 border border-line bg-ink p-6 text-paper shadow-card">
+            <div className="text-xs uppercase tracking-wide text-paper/60">Return on cost</div>
+            <div className="mt-1 font-display text-4xl font-semibold">
+              {margin == null ? "—" : `${margin}%`}
+            </div>
+            <div className="mt-1 text-xs text-paper/60">
+              {sold.length === 0 ? "No sales yet" : `across ${sold.length} sold`}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="mt-10">
         <h2 className="rule font-display text-lg font-semibold">Recent finds</h2>
         {items.length === 0 ? (
@@ -53,7 +90,7 @@ export default async function DashboardPage() {
             {items.slice(0, 8).map((i) => (
               <Link
                 key={i.id}
-                href="/inventory"
+                href={`/inventory/${i.id}`}
                 className="flex items-center gap-4 border-b border-line px-5 py-3.5 last:border-0 hover:bg-paper-sunk"
               >
                 <div className="min-w-0 flex-1">
