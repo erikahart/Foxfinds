@@ -61,7 +61,7 @@ export default async function InventoryPage({
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           {items.map((i) => (
-            <div key={i.id} className="overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card">
+            <Link key={i.id} href={`/inventory/${i.id}`} className="block overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card transition-colors hover:border-line-strong">
               <div className="aspect-square bg-paper-sunk">
                 {i.image_path && urls[i.image_path] ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -78,7 +78,7 @@ export default async function InventoryPage({
                 <div className="mt-1 text-xs text-ink-muted">{i.category ?? "Uncategorized"}</div>
                 <div className="mt-2 font-display text-xl font-semibold">{money(i.suggested_price)}</div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
