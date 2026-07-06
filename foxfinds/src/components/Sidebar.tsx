@@ -58,7 +58,7 @@ export default function Sidebar({ shop, logoUrl }: { shop: string; logoUrl?: str
 
   const Footer = () => (
     <div className="border-t border-line p-3">
-      
+      <a
         href="/shop"
         target="_blank"
         rel="noreferrer"
@@ -79,12 +79,14 @@ export default function Sidebar({ shop, logoUrl }: { shop: string; logoUrl?: str
 
   return (
     <>
+      {/* Desktop sidebar */}
       <aside className="hidden w-60 flex-shrink-0 flex-col border-r border-line bg-paper-raised md:flex">
         <div className="border-b border-line px-5 py-5"><Brand logoUrl={logoUrl} /></div>
         <NavLinks />
         <Footer />
       </aside>
 
+      {/* Mobile top bar */}
       <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-line bg-paper-raised px-4 py-3 md:hidden">
         <Brand logoUrl={logoUrl} />
         <button onClick={() => setOpen(true)} aria-label="Open menu" className="-mr-2 rounded-lg p-2 text-ink-soft hover:bg-paper-sunk">
@@ -92,6 +94,7 @@ export default function Sidebar({ shop, logoUrl }: { shop: string; logoUrl?: str
         </button>
       </div>
 
+      {/* Mobile drawer */}
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} />
