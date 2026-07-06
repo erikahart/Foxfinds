@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { signedPhotoUrls } from "@/lib/supabase/photos";
 import { money, since } from "@/lib/format";
 import { StatusBadge } from "@/components/ui/Badge";
 import type { Item } from "@/types";
@@ -19,6 +20,9 @@ export default async function DashboardPage() {
   const cogs = sold.reduce((s, i) => s + (i.cost ?? 0), 0);
   const profit = revenue - cogs;
   const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : null;
+
+  const recent = items.slice(0, 8);
+  const urls = await signedPhotoUrls(supabase as never, recent.map((i) => i.image_path));
 
   const stats = [
     { label: "In inventory", value: String(active.length) },
@@ -87,12 +91,20 @@ export default async function DashboardPage() {
           <EmptyState />
         ) : (
           <div className="mt-4 overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card">
-            {items.slice(0, 8).map((i) => (
+            {recent.map((i) => (
               <Link
                 key={i.id}
                 href={`/inventory/${i.id}`}
-                className="flex items-center gap-4 border-b border-line px-5 py-3.5 last:border-0 hover:bg-paper-sunk"
+                className="flex items-center gap-4 border-b border-line px-4 py-3 last:border-0 hover:bg-paper-sunk"
               >
+                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-paper-sunk">
+                  {i.image_path && urls[i.image_path] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={urls[i.image_path]} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="grid h-full place-items-center text-[10px] text-ink-muted">No photo</div>
+                  )}
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{i.title}</div>
                   <div className="text-xs text-ink-muted">
