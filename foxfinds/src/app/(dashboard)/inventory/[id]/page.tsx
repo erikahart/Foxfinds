@@ -213,4 +213,26 @@ function CategoryField({
   if (adding) {
     return (
       <div className="flex items-center gap-2">
-        <input autoFocus className={inp}
+        <input autoFocus className={inp} placeholder="New category name" value={value} onChange={(e) => onChange(e.target.value)} />
+        <button type="button" onClick={() => setAdding(false)} className="whitespace-nowrap text-xs text-ink-muted hover:text-ink">
+          Pick existing
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <select
+      className={inp}
+      value={value}
+      onChange={(e) => {
+        if (e.target.value === "__new__") { onChange(""); setAdding(true); }
+        else onChange(e.target.value);
+      }}
+    >
+      <option value="">Uncategorized</option>
+      {all.map((c) => <option key={c} value={c}>{c}</option>)}
+      <option value="__new__">+ Add new category…</option>
+    </select>
+  );
+}
