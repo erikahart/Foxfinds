@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Plus, X, ArrowLeft, ArrowRight, Star, Pencil } from "lucide-react";
+import { Loader2, Plus, X, ArrowLeft, ArrowRight, Star, Pencil, Camera } from "lucide-react";
 import ImageEditor from "@/components/ImageEditor";
 import { toUploadable } from "@/lib/toUploadable";
 
@@ -16,6 +16,7 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const cameraRef = useRef<HTMLInputElement | null>(null);
   const [editing, setEditing] = useState<Photo | null>(null);
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [itemId]);
@@ -127,14 +128,24 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
     <div className="mt-4">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">More photos</span>
-        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
-        <button
-          onClick={() => fileRef.current?.click()}
-          disabled={uploading || busy}
-          className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60"
-        >
-          {uploading ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Add photos
-        </button>
+        <div className="flex items-center gap-2">
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
+          <button
+            onClick={() => cameraRef.current?.click()}
+            disabled={uploading || busy}
+            className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60"
+          >
+            <Camera size={13} /> Take photo
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading || busy}
+            className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60"
+          >
+            {uploading ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Add photos
+          </button>
+        </div>
       </div>
 
       {error && <p className="mb-2 text-sm text-ember">{error}</p>}

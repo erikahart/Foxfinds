@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ImageEditor from "@/components/ImageEditor";
 import { toUploadable } from "@/lib/toUploadable";
-import { Loader2, Upload, Pencil } from "lucide-react";
+import { Loader2, Upload, Pencil, Camera } from "lucide-react";
 
 export default function CoverPhoto({ itemId, initialPath }: { itemId: string; initialPath: string | null }) {
   const supabase = createClient();
@@ -15,6 +15,7 @@ export default function CoverPhoto({ itemId, initialPath }: { itemId: string; in
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const cameraRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -72,7 +73,12 @@ export default function CoverPhoto({ itemId, initialPath }: { itemId: string; in
         )}
       </div>
 
-      <div className="mt-2 flex items-center gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
+        <button onClick={() => cameraRef.current?.click()} disabled={busy}
+          className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60">
+          <Camera size={13} /> Take photo
+        </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
         <button onClick={() => fileRef.current?.click()} disabled={busy}
           className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60">
