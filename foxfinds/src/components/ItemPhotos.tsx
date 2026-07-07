@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Plus, X, ArrowLeft, ArrowRight, Star, Pencil } from "lucide-react";
 import ImageEditor from "@/components/ImageEditor";
+import { toUploadable } from "@/lib/toUploadable";
 
 type Photo = { id: string; storage_path: string; position: number; url: string };
 
@@ -45,15 +46,19 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Please sign in again."); setUploading(false); return; }
 
-    let pos = photos.length;
+   let pos = photos.length;
     for (const file of files) {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const rand = (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
-      const path = `${user.id}/${itemId}-${rand}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("item-photos").upload(path, file, { contentType: file.type });
-      if (upErr) { setError(upErr.message); continue; }
-      const { error: dbErr } = await supabase.from("item_photos").insert({ item_id: itemId, storage_path: path, position: pos++ });
-      if (dbErr) { setError(dbErr.message); }
+      try {
+        const { blob, ext, contentType } = await toUploadable(file);
+        const rand = (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
+        const path = `${user.id}/${itemId}-${rand}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("item-photos").upload(path, blob, { contentType });
+        if (upErr) { setError(upErr.message); continue; }
+        const { error: dbErr } = await supabase.from("item_photos").insert({ item_id: itemId, storage_path: path, position: pos++ });
+        if (dbErr) { setError(dbErr.message); }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Couldn't process that photo.");
+      }
     }
     if (fileRef.current) fileRef.current.value = "";
     await load();
