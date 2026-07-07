@@ -94,10 +94,14 @@ export default function ReservationsPage() {
                 </div>
               )}
               {r.status === "confirmed" && (
-                <div className="mt-3">
+                <div className="mt-3 flex gap-2">
                   <button onClick={() => setStatus(r.id, "completed")} disabled={busy === r.id}
                     className="rounded-lg border border-line px-3 py-2 text-sm text-ink-muted hover:bg-paper-sunk disabled:opacity-60">
                     Mark picked up
+                  </button>
+                  <button onClick={() => setStatus(r.id, "declined")} disabled={busy === r.id}
+                    className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-sm text-ink-muted hover:bg-paper-sunk disabled:opacity-60">
+                    <X size={15} /> Decline
                   </button>
                 </div>
               )}
