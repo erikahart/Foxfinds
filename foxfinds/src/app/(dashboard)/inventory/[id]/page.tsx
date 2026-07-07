@@ -9,6 +9,7 @@ import { ArrowLeft, Check, Trash2, Loader2 } from "lucide-react";
 import ItemPhotos from "@/components/ItemPhotos";
 import CoverPhoto from "@/components/CoverPhoto";
 import { CATEGORIES } from "@/lib/categories";
+import ShareAndPost from "@/components/ShareAndPost";
 
 const inp =
   "w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm outline-none focus:border-fox focus:ring-2 focus:ring-fox/20";
@@ -180,6 +181,8 @@ export default function ItemDetailPage() {
               <Trash2 size={16} /> Delete
             </button>
           </div>
+
+          <ShareAndPost itemId={item.id} title={item.title} price={item.suggested_price} description={item.description} />
         </div>
       </div>
     </>
