@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signedPhotoUrls } from "@/lib/supabase/photos";
-import { money } from "@/lib/format";
-import { StatusBadge } from "@/components/ui/Badge";
 import type { Item, ItemStatus } from "@/types";
 import { PlusCircle } from "lucide-react";
+import InventoryBrowser from "@/components/InventoryBrowser";
 
 const FILTERS: { key: ItemStatus | "all"; label: string }[] = [
   { key: "all", label: "All" },
@@ -24,19 +23,6 @@ export default async function InventoryPage({
   const all = (data ?? []) as Item[];
   const items = status && status !== "all" ? all.filter((i) => i.status === status) : all;
   const urls = await signedPhotoUrls(supabase as never, items.map((i) => i.image_path));
-
-  // Group by category
-  const groups = new Map<string, Item[]>();
-  for (const i of items) {
-    const key = i.category?.trim() || "Uncategorized";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(i);
-  }
-  const sortedGroups = [...groups.entries()].sort((a, b) => {
-    if (a[0] === "Uncategorized") return 1;
-    if (b[0] === "Uncategorized") return -1;
-    return a[0].localeCompare(b[0]);
-  });
 
   return (
     <>
@@ -67,43 +53,7 @@ export default async function InventoryPage({
         })}
       </div>
 
-      {items.length === 0 ? (
-        <div className="rounded-xl2 border border-dashed border-line-strong bg-paper-raised p-10 text-center text-ink-muted">
-          Nothing here yet.
-        </div>
-      ) : (
-        <div className="space-y-10">
-          {sortedGroups.map(([cat, group]) => (
-            <section key={cat}>
-              <div className="rule mb-4 flex items-baseline gap-2">
-                <h2 className="font-display text-lg font-semibold">{cat}</h2>
-                <span className="text-sm text-ink-muted">{group.length}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {group.map((i) => (
-                  <Link key={i.id} href={`/inventory/${i.id}`} className="block overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card transition-colors hover:border-line-strong">
-                    <div className="aspect-square bg-paper-sunk">
-                      {i.image_path && urls[i.image_path] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={urls[i.image_path]} alt={i.title} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="grid h-full place-items-center text-ink-muted">No photo</div>
-                      )}
-                    </div>
-                    <div className="p-3.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="line-clamp-2 text-sm font-medium">{i.title}</div>
-                        <StatusBadge status={i.status} />
-                      </div>
-                      <div className="mt-2 font-display text-xl font-semibold">{money(i.suggested_price)}</div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+      <InventoryBrowser items={items} urls={urls} />
     </>
   );
 }
