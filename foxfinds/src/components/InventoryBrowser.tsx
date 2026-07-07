@@ -5,25 +5,26 @@ import { money } from "@/lib/format";
 import { StatusBadge } from "@/components/ui/Badge";
 import type { Item } from "@/types";
 import { Search, X } from "lucide-react";
+import { SHOP_FILTERS } from "@/lib/categories";
 
 export default function InventoryBrowser({ items, urls }: { items: Item[]; urls: Record<string, string> }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("All");
 
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    for (const i of items) set.add(i.category?.trim() || "Uncategorized");
-    const sorted = Array.from(set).sort((a, b) =>
-      a === "Uncategorized" ? 1 : b === "Uncategorized" ? -1 : a.localeCompare(b),
-    );
-    return ["All", ...sorted];
-  }, [items]);
-
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return items.filter((i) => {
-      const catKey = i.category?.trim() || "Uncategorized";
-      if (cat !== "All" && catKey !== cat) return false;
+      // Filter pill — same rules as the shop
+      if (cat === "New Arrivals") {
+        const days = (Date.now() - new Date(i.created_at).getTime()) / 86_400_000;
+        if (days > 14) return false;
+      } else if (cat === "Under $25") {
+        if ((i.suggested_price ?? Number.POSITIVE_INFINITY) > 25) return false;
+      } else if (cat !== "All") {
+        const c = (i.category ?? "").toLowerCase();
+        if (!(c === cat.toLowerCase() || c.includes(cat.toLowerCase()))) return false;
+      }
+      // Search
       if (!needle) return true;
       const hay = [i.title, i.category, i.brand, i.description, i.condition]
         .filter(Boolean).join(" ").toLowerCase();
@@ -65,7 +66,7 @@ export default function InventoryBrowser({ items, urls }: { items: Item[]; urls:
       {/* Category filter */}
       <div className="mb-6 -mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
         <div className="flex gap-2 pb-1">
-          {categories.map((c) => (
+          {SHOP_FILTERS.map((c) => (
             <button
               key={c}
               onClick={() => setCat(c)}
