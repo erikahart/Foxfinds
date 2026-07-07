@@ -27,7 +27,6 @@ export default function ItemDetailPage() {
 
   const [item, setItem] = useState<Item | null>(null);
   const [soldPrice, setSoldPrice] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,12 +40,6 @@ export default function ItemDetailPage() {
       const it = data as Item;
       setItem(it);
       setSoldPrice(it.sold_price != null ? String(it.sold_price) : "");
-      const { data: cats } = await supabase.from("items").select("category");
-      if (active) {
-        const existing = (cats ?? []).map((c) => (c as { category: string | null }).category).filter((v): v is string => !!v && v.trim() !== "");
-        const distinct = Array.from(new Set([...CATEGORIES, ...existing]));
-        setCategories(distinct);
-      }
       setLoading(false);
     })();
     return () => { active = false; };
@@ -155,7 +148,7 @@ export default function ItemDetailPage() {
           <div className="space-y-4 rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
             <Field label="Title"><input className={inp} value={item.title} onChange={(e) => set("title", e.target.value)} /></Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Category"><CategoryField value={item.category ?? ""} options={categories} onChange={(v) => set("category", v)} /></Field>
+              <Field label="Category"><CategoryField value={item.category ?? ""} onChange={(v) => set("category", v)} /></Field>
               <Field label="Brand"><input className={inp} value={item.brand ?? ""} onChange={(e) => set("brand", e.target.value)} /></Field>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -199,34 +192,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function CategoryField({
-  value, options, onChange,
-}: { value: string; options: string[]; onChange: (v: string) => void }) {
-  const [adding, setAdding] = useState(false);
-  const all = Array.from(new Set([...options, value].filter((v) => v && v.trim() !== ""))).sort();
-
-  if (adding) {
-    return (
-      <div className="flex items-center gap-2">
-        <input autoFocus className={inp} placeholder="New category name" value={value} onChange={(e) => onChange(e.target.value)} />
-        <button type="button" onClick={() => setAdding(false)} className="whitespace-nowrap text-xs text-ink-muted hover:text-ink">
-          Pick existing
-        </button>
-      </div>
-    );
-  }
-
+  value, onChange,
+}: { value: string; onChange: (v: string) => void }) {
+  const isStandard = value === "" || CATEGORIES.includes(value);
   return (
-    <select
-      className={inp}
-      value={value}
-      onChange={(e) => {
-        if (e.target.value === "__new__") { onChange(""); setAdding(true); }
-        else onChange(e.target.value);
-      }}
-    >
+    <select className={inp} value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">Uncategorized</option>
-      {all.map((c) => <option key={c} value={c}>{c}</option>)}
-      <option value="__new__">+ Add new category…</option>
+      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+      {!isStandard && <option value={value}>{value} (current — pick a standard category)</option>}
     </select>
   );
 }
