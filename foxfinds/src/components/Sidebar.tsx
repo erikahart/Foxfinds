@@ -87,11 +87,11 @@ export default function Sidebar({ shop, logoUrl }: { shop: string; logoUrl?: str
       </aside>
 
       {/* Mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-line bg-paper-raised px-4 py-3 md:hidden">
-        <Brand logoUrl={logoUrl} />
-        <button onClick={() => setOpen(true)} aria-label="Open menu" className="-mr-2 rounded-lg p-2 text-ink-soft hover:bg-paper-sunk">
+      <div className="fixed inset-x-0 top-0 z-40 flex items-center gap-3 border-b border-line bg-paper-raised px-4 py-3 md:hidden">
+        <button onClick={() => setOpen(true)} aria-label="Open menu" className="-ml-1 rounded-lg p-2 text-ink-soft hover:bg-paper-sunk">
           <Menu size={22} />
         </button>
+        <Brand logoUrl={logoUrl} />
       </div>
 
       {/* Mobile drawer */}

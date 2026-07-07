@@ -33,30 +33,30 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <div className="mb-8 flex items-end justify-between">
+      <div className="mb-6 flex items-end justify-between md:mb-8">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fox-deep">The bench</p>
           <h1 className="font-display text-3xl font-semibold">Today&rsquo;s haul</h1>
         </div>
-        <Link href="/add" className="flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper hover:bg-ink-soft">
+        <Link href="/add" className="flex flex-shrink-0 items-center gap-2 rounded-xl bg-fox px-4 py-2.5 text-sm font-semibold text-ink shadow-card hover:bg-fox-deep">
           <PlusCircle size={17} /> Add a find
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
+          <div key={s.label} className="rounded-xl2 border border-line bg-paper-raised p-4 shadow-card md:p-5">
             <div className="text-xs uppercase tracking-wide text-ink-muted">{s.label}</div>
-            <div className={`mt-2 font-display text-3xl font-semibold ${s.tone ?? ""}`}>{s.value}</div>
+            <div className={`mt-1 font-display text-2xl font-semibold md:mt-2 md:text-3xl ${s.tone ?? ""}`}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* The books — all-time P&L */}
-      <div className="mt-8">
+      <div className="mt-6 md:mt-8">
         <h2 className="rule font-display text-lg font-semibold">The books</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-[1fr_240px]">
-          <div className="rounded-xl2 border border-line bg-paper-raised p-6 shadow-card">
+          <div className="rounded-xl2 border border-line bg-paper-raised p-4 shadow-card md:p-6">
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <dt className="text-ink-muted">Revenue (all-time)</dt>
@@ -73,9 +73,9 @@ export default async function DashboardPage() {
             </dl>
           </div>
 
-          <div className="flex flex-col justify-center rounded-xl2 border border-line bg-ink p-6 text-paper shadow-card">
+          <div className="flex flex-col justify-center rounded-xl2 border border-line bg-ink p-4 text-paper shadow-card md:p-6">
             <div className="text-xs uppercase tracking-wide text-paper/60">Return on cost</div>
-            <div className="mt-1 font-display text-4xl font-semibold">
+            <div className="mt-1 font-display text-3xl font-semibold md:text-4xl">
               {margin == null ? "—" : `${margin}%`}
             </div>
             <div className="mt-1 text-xs text-paper/60">
@@ -85,7 +85,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-8 md:mt-10">
         <h2 className="rule font-display text-lg font-semibold">Recent finds</h2>
         {items.length === 0 ? (
           <EmptyState />
