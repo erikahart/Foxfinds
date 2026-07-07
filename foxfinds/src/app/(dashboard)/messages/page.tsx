@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Archive, ArchiveRestore } from "lucide-react";
 
 type Msg = {
   id: string;
@@ -33,6 +33,9 @@ export default function MessagesPage() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [urls, setUrls] = useState<Record<string, string>>({});
+  const [me, setMe] = useState<string | null>(null);
+  const [archivedMap, setArchivedMap] = useState<Record<string, string>>({});
+  const [view, setView] = useState<"active" | "archived">("active");
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   async function signMissing(paths: string[]) {
@@ -49,6 +52,9 @@ export default function MessagesPage() {
   }
 
   async function load() {
+    const { data: { user } } = await supabase.auth.getUser();
+    const meId = user?.id ?? null;
+
     const { data } = await supabase
       .from("messages")
       .select("id,item_id,customer_id,customer_email,sender_role,body,created_at,items(title,image_path)")
@@ -73,8 +79,23 @@ export default function MessagesPage() {
       if (m.customer_email) t.customerEmail = m.customer_email;
     }
     const list = [...map.values()].sort((a, b) => (a.last < b.last ? 1 : -1));
+
+    // Which threads has the seller archived?
+    const archived: Record<string, string> = {};
+    if (meId) {
+      const { data: arch } = await supabase
+        .from("archived_threads")
+        .select("item_id,customer_id,archived_at")
+        .eq("user_id", meId);
+      (arch ?? []).forEach((r) => {
+        const row = r as { item_id: string; customer_id: string; archived_at: string };
+        archived[`${row.item_id}:${row.customer_id}`] = row.archived_at;
+      });
+    }
+
+    setMe(meId);
+    setArchivedMap(archived);
     setThreads(list);
-    setActiveKey((prev) => prev ?? list[0]?.key ?? null);
     setLoading(false);
     signMissing(list.map((t) => t.itemImagePath).filter((p): p is string => !!p));
   }
@@ -86,8 +107,39 @@ export default function MessagesPage() {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
-  const active = threads.find((t) => t.key === activeKey) ?? null;
+  // A thread is archived unless the customer has messaged since it was archived.
+  function isArchived(t: Thread): boolean {
+    const at = archivedMap[t.key];
+    if (!at) return false;
+    const lastCust = t.msgs
+      .filter((m) => m.sender_role === "customer")
+      .map((m) => m.created_at)
+      .sort()
+      .pop();
+    if (lastCust && lastCust > at) return false; // new customer message → back to active
+    return true;
+  }
+
+  const activeCount = threads.filter((t) => !isArchived(t)).length;
+  const archivedCount = threads.filter((t) => isArchived(t)).length;
+  const visible = threads.filter((t) => (view === "archived" ? isArchived(t) : !isArchived(t)));
+  const active = visible.find((t) => t.key === activeKey) ?? visible[0] ?? null;
+
   useEffect(() => { bottomRef.current?.scrollIntoView(); }, [active?.msgs.length]);
+
+  async function toggleArchive(t: Thread) {
+    if (!me) return;
+    if (isArchived(t)) {
+      await supabase.from("archived_threads").delete()
+        .eq("user_id", me).eq("item_id", t.itemId).eq("customer_id", t.customerId);
+    } else {
+      await supabase.from("archived_threads").upsert(
+        { user_id: me, item_id: t.itemId, customer_id: t.customerId, archived_at: new Date().toISOString() },
+        { onConflict: "user_id,item_id,customer_id" },
+      );
+    }
+    await load();
+  }
 
   async function reply() {
     const body = draft.trim();
@@ -110,7 +162,20 @@ export default function MessagesPage() {
   return (
     <>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fox-deep">The counter</p>
-      <h1 className="mb-6 font-display text-3xl font-semibold">Messages</h1>
+      <h1 className="mb-4 font-display text-3xl font-semibold">Messages</h1>
+
+      {!loading && threads.length > 0 && (
+        <div className="mb-5 flex gap-2">
+          {(["active", "archived"] as const).map((v) => (
+            <button key={v} onClick={() => { setActiveKey(null); setView(v); }}
+              className={`rounded-full border px-3.5 py-1.5 text-sm ${
+                view === v ? "border-ink bg-ink text-paper" : "border-line bg-paper-raised text-ink-soft hover:bg-paper-sunk"
+              }`}>
+              {v === "active" ? "Active" : "Archived"} ({v === "active" ? activeCount : archivedCount})
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center gap-2 text-ink-muted"><Loader2 className="animate-spin" size={18} /> Loading…</div>
@@ -118,12 +183,16 @@ export default function MessagesPage() {
         <div className="rounded-xl2 border border-dashed border-line-strong bg-paper-raised p-10 text-center text-ink-muted">
           No messages yet. When a customer messages you about a piece, the conversation shows up here.
         </div>
+      ) : visible.length === 0 ? (
+        <div className="rounded-xl2 border border-dashed border-line-strong bg-paper-raised p-10 text-center text-ink-muted">
+          {view === "archived" ? "No archived conversations." : "No active conversations — check the Archived tab."}
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_1fr]">
           <div className="space-y-1.5">
-            {threads.map((t) => {
+            {visible.map((t) => {
               const u = t.itemImagePath ? urls[t.itemImagePath] : undefined;
-              const on = activeKey === t.key;
+              const on = active?.key === t.key;
               return (
                 <button key={t.key} onClick={() => setActiveKey(t.key)}
                   className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left ${on ? "border-ink bg-ink text-paper" : "border-line bg-paper-raised hover:bg-paper-sunk"}`}>
@@ -151,10 +220,14 @@ export default function MessagesPage() {
                     <img src={activeUrl} alt="" className="h-full w-full object-cover" />
                   ) : null}
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="line-clamp-1 text-sm font-medium">{active.itemTitle}</div>
                   <a href={`mailto:${active.customerEmail}`} className="text-xs text-fox-deep underline underline-offset-2">{active.customerEmail}</a>
                 </div>
+                <button onClick={() => toggleArchive(active)}
+                  className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs text-ink-soft hover:border-fox hover:bg-fox-tint">
+                  {isArchived(active) ? <><ArchiveRestore size={14} /> Unarchive</> : <><Archive size={14} /> Archive</>}
+                </button>
               </div>
               <div className="max-h-96 flex-1 space-y-2 overflow-y-auto p-4">
                 {active.msgs.map((m) => (
