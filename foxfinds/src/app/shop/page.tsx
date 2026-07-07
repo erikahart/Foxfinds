@@ -40,12 +40,13 @@ async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, st
     return { items, urls, reserved };
   }
 
-  // Photos — never let a signing hiccup blank the grid.
+  // Photos — the bucket is public, so build permanent public URLs (no signing, no expiry).
+  // These work for every visitor and for any user's uploads.
   try {
     const paths = items.map((i) => i.image_path).filter((p): p is string => !!p);
-    if (paths.length) {
-      const { data: signed } = await admin.storage.from("item-photos").createSignedUrls(paths, 3600);
-      signed?.forEach((s) => { if (s.path && s.signedUrl) urls[s.path] = s.signedUrl; });
+    for (const path of paths) {
+      const { data: pub } = admin.storage.from("item-photos").getPublicUrl(path);
+      if (pub?.publicUrl) urls[path] = pub.publicUrl;
     }
   } catch { /* show items without photos rather than nothing */ }
 
