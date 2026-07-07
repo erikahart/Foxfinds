@@ -7,6 +7,7 @@ import type { Item, ItemStatus } from "@/types";
 import { money } from "@/lib/format";
 import { ArrowLeft, Check, Trash2, Loader2 } from "lucide-react";
 import ItemPhotos from "@/components/ItemPhotos";
+import CoverPhoto from "@/components/CoverPhoto";
 
 const inp =
   "w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm outline-none focus:border-fox focus:ring-2 focus:ring-fox/20";
@@ -23,7 +24,6 @@ export default function ItemDetailPage() {
   const supabase = createClient();
 
   const [item, setItem] = useState<Item | null>(null);
-  const [photo, setPhoto] = useState<string | null>(null);
   const [soldPrice, setSoldPrice] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,10 +39,6 @@ export default function ItemDetailPage() {
       const it = data as Item;
       setItem(it);
       setSoldPrice(it.sold_price != null ? String(it.sold_price) : "");
-      if (it.image_path) {
-        const { data: signed } = await supabase.storage.from("item-photos").createSignedUrl(it.image_path, 3600);
-        if (active) setPhoto(signed?.signedUrl ?? null);
-      }
       const { data: cats } = await supabase.from("items").select("category");
       if (active) {
         const distinct = Array.from(
@@ -119,14 +115,7 @@ export default function ItemDetailPage() {
 
       <div className="grid gap-6 md:grid-cols-[minmax(0,340px)_1fr]">
         <div>
-          <div className="aspect-square overflow-hidden rounded-xl2 border border-line bg-paper-sunk">
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt={item.title} className="h-full w-full object-cover" />
-            ) : (
-              <div className="grid h-full place-items-center text-ink-muted">No photo</div>
-            )}
-          </div>
+          <CoverPhoto itemId={item.id} initialPath={item.image_path} />
           <ItemPhotos itemId={item.id} />
         </div>
 

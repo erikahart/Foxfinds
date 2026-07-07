@@ -46,7 +46,7 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Please sign in again."); setUploading(false); return; }
 
-   let pos = photos.length;
+    let pos = photos.length;
     for (const file of files) {
       try {
         const { blob, ext, contentType } = await toUploadable(file);
@@ -70,6 +70,7 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
     if (target < 0 || target >= photos.length) return;
     setBusy(true); setError(null); setNote(null);
     const a = photos[index], b = photos[target];
+    // Swap their positions in the database
     await supabase.from("item_photos").update({ position: b.position }).eq("id", a.id);
     await supabase.from("item_photos").update({ position: a.position }).eq("id", b.id);
     await load();
@@ -78,10 +79,23 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
 
   async function setCover(p: Photo) {
     setBusy(true); setError(null); setNote(null);
-    const { error: err } = await supabase.from("items").update({ image_path: p.storage_path }).eq("id", itemId);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setError("Please sign in again."); setBusy(false); return; }
+      // Copy the file so the cover is independent — editing/deleting this photo won't affect the cover.
+      const res = await fetch(p.url);
+      const blob = await res.blob();
+      const rand = (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
+      const newPath = `${user.id}/${itemId}-cover-${rand}.jpg`;
+      const { error: upErr } = await supabase.storage.from("item-photos").upload(newPath, blob, { contentType: blob.type || "image/jpeg" });
+      if (upErr) { setError(upErr.message); setBusy(false); return; }
+      const { error: err } = await supabase.from("items").update({ image_path: newPath }).eq("id", itemId);
+      if (err) { setError(err.message); setBusy(false); return; }
+      setNote("Cover updated — reload to see it in grids and the shop.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't set cover.");
+    }
     setBusy(false);
-    if (err) { setError(err.message); return; }
-    setNote("Cover updated — reload to see it in grids and the shop.");
   }
 
   async function applyEdit(blob: Blob) {
