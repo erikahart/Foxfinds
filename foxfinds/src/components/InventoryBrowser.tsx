@@ -21,8 +21,10 @@ export default function InventoryBrowser({ items, urls }: { items: Item[]; urls:
       } else if (cat === "Under $25") {
         if ((i.suggested_price ?? Number.POSITIVE_INFINITY) > 25) return false;
       } else if (cat !== "All") {
-        const c = (i.category ?? "").toLowerCase();
-        if (!(c === cat.toLowerCase() || c.includes(cat.toLowerCase()))) return false;
+        const nf = cat.toLowerCase();
+        const cats = [i.category, ...(i.categories ?? [])]
+          .filter((c): c is string => !!c).map((c) => c.toLowerCase());
+        if (!cats.some((c) => c === nf || c.includes(nf))) return false;
       }
       // Search
       if (!needle) return true;

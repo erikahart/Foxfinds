@@ -27,6 +27,7 @@ export default function ItemDetailPage() {
 
   const [item, setItem] = useState<Item | null>(null);
   const [soldPrice, setSoldPrice] = useState("");
+  const [extraCats, setExtraCats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export default function ItemDetailPage() {
       const it = data as Item;
       setItem(it);
       setSoldPrice(it.sold_price != null ? String(it.sold_price) : "");
+      setExtraCats((it.categories ?? []).filter((c) => c && c !== it.category));
       setLoading(false);
     })();
     return () => { active = false; };
@@ -53,9 +55,13 @@ export default function ItemDetailPage() {
     if (!item) return;
     setSaving(true); setError(null);
     const isSold = item.status === "sold";
+    const cats = Array.from(
+      new Set([item.category, ...extraCats].filter((c): c is string => !!c && c.trim() !== "")),
+    );
     const { error } = await supabase.from("items").update({
       title: item.title,
       category: item.category,
+      categories: cats,
       brand: item.brand,
       condition: item.condition,
       description: item.description,
@@ -151,6 +157,7 @@ export default function ItemDetailPage() {
               <Field label="Category"><CategoryField value={item.category ?? ""} onChange={(v) => set("category", v)} /></Field>
               <Field label="Brand"><input className={inp} value={item.brand ?? ""} onChange={(e) => set("brand", e.target.value)} /></Field>
             </div>
+            <CategoryTags primary={item.category ?? ""} extras={extraCats} onChange={setExtraCats} />
             <div className="grid grid-cols-3 gap-3">
               <Field label="Condition"><input className={inp} value={item.condition ?? ""} onChange={(e) => set("condition", e.target.value)} /></Field>
               <Field label="Cost"><input className={inp} type="number" value={item.cost ?? 0} onChange={(e) => set("cost", Number(e.target.value))} /></Field>
@@ -201,5 +208,37 @@ function CategoryField({
       {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
       {!isStandard && <option value={value}>{value} (current — pick a standard category)</option>}
     </select>
+  );
+}
+
+function CategoryTags({
+  primary, extras, onChange,
+}: { primary: string; extras: string[]; onChange: (v: string[]) => void }) {
+  const options = CATEGORIES.filter((c) => c !== primary);
+  function toggle(c: string) {
+    onChange(extras.includes(c) ? extras.filter((x) => x !== c) : [...extras, c]);
+  }
+  return (
+    <div>
+      <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-ink-muted">Also tagged</div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((c) => {
+          const on = extras.includes(c);
+          return (
+            <button
+              type="button"
+              key={c}
+              onClick={() => toggle(c)}
+              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                on ? "border-fox bg-fox-tint text-ink" : "border-line bg-paper text-ink-soft hover:border-line-strong"
+              }`}
+            >
+              {on ? "✓ " : ""}{c}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1.5 text-xs text-ink-muted">Primary category is set above; tap any others this item also fits.</p>
+    </div>
   );
 }

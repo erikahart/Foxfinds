@@ -13,6 +13,7 @@ type ShopItem = {
   suggested_price: number | null;
   image_path: string | null;
   created_at: string;
+  categories: string[] | null;
 };
 
 function matches(i: ShopItem, f: string): boolean {
@@ -22,8 +23,10 @@ function matches(i: ShopItem, f: string): boolean {
     return days <= 14;
   }
   if (f === "Under $25") return (i.suggested_price ?? Number.POSITIVE_INFINITY) <= 25;
-  const c = (i.category ?? "").toLowerCase();
-  return c === f.toLowerCase() || c.includes(f.toLowerCase());
+  const nf = f.toLowerCase();
+  const cats = [i.category, ...(i.categories ?? [])]
+    .filter((c): c is string => !!c).map((c) => c.toLowerCase());
+  return cats.some((c) => c === nf || c.includes(nf));
 }
 
 export default function ShopBrowser({
@@ -35,6 +38,7 @@ export default function ShopBrowser({
 
   return (
     <>
+      {/* Filter buttons — horizontally scrollable on small screens */}
       <div className="mt-6 -mx-6 overflow-x-auto px-6">
         <div className="flex gap-2 pb-1">
           {SHOP_FILTERS.map((f) => (

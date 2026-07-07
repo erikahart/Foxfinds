@@ -10,6 +10,7 @@ type ShopItem = {
   id: string;
   title: string;
   category: string | null;
+  categories: string[] | null;
   brand: string | null;
   condition: string | null;
   description: string | null;
@@ -30,7 +31,7 @@ async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, st
   try {
     const { data } = await admin
       .from("items")
-      .select("id,title,category,brand,condition,description,suggested_price,image_path,created_at,status")
+      .select("id,title,category,categories,brand,condition,description,suggested_price,image_path,created_at,status")
       .eq("status", "listed")
       .order("created_at", { ascending: false });
     items = (data ?? []) as ShopItem[];

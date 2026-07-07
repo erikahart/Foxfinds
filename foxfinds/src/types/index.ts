@@ -7,6 +7,7 @@ export interface Item {
   user_id: string;
   title: string;
   category: string | null;
+  categories: string[];
   brand: string | null;
   condition: string | null;
   description: string | null;
@@ -48,4 +49,15 @@ export interface Analysis {
   price_low: number;
   price_high: number;
   suggested_price: number;
+}
+
+export interface Reservation {
+  id: string;
+  item_id: string;
+  customer_id: string;
+  customer_email: string | null;
+  customer_name: string | null;
+  pickup_note: string | null;
+  status: "pending" | "confirmed" | "declined" | "completed";
+  created_at: string;
 }
