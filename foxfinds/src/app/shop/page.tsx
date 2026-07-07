@@ -72,14 +72,22 @@ export default async function ShopPage() {
   return (
     <main className="min-h-screen">
       <header className="border-b border-line bg-paper-raised">
-        <div className="mx-auto flex max-w-5xl items-center gap-2 px-6 py-5 font-display text-xl font-semibold">
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain" />
-          ) : (
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink text-fox">✦</span>
-          )}
-          Fox Finds
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+          <div className="flex items-center gap-2 font-display text-xl font-semibold">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain" />
+            ) : (
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink text-fox">✦</span>
+            )}
+            Fox Finds
+          </div>
+          <Link
+            href="/login"
+            className="text-sm font-medium text-ink-muted transition-colors hover:text-ink"
+          >
+            Seller login
+          </Link>
         </div>
       </header>
 
