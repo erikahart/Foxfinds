@@ -33,12 +33,12 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <div className="mb-6 flex items-end justify-between md:mb-8">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between md:mb-8">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fox-deep">The bench</p>
           <h1 className="font-display text-3xl font-semibold">Today&rsquo;s haul</h1>
         </div>
-        <Link href="/add" className="flex flex-shrink-0 items-center gap-2 rounded-xl bg-fox px-4 py-2.5 text-sm font-semibold text-ink shadow-card hover:bg-fox-deep">
+        <Link href="/add" className="flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-fox px-4 py-3 text-sm font-semibold text-ink shadow-card hover:bg-fox-deep sm:w-auto sm:justify-start sm:py-2.5">
           <PlusCircle size={17} /> Add a find
         </Link>
       </div>
