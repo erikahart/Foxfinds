@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Plus, X, ArrowLeft, ArrowRight, Star } from "lucide-react";
+import { Loader2, Plus, X, ArrowLeft, ArrowRight, Star, Pencil } from "lucide-react";
+import ImageEditor from "@/components/ImageEditor";
 
 type Photo = { id: string; storage_path: string; position: number; url: string };
 
@@ -14,6 +15,7 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const [editing, setEditing] = useState<Photo | null>(null);
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [itemId]);
 
@@ -77,6 +79,23 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
     setNote("Cover updated — reload to see it in grids and the shop.");
   }
 
+  async function applyEdit(blob: Blob) {
+    if (!editing) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setError("Please sign in again."); return; }
+    const rand = (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
+    const newPath = `${user.id}/${itemId}-${rand}.jpg`;
+    const { error: upErr } = await supabase.storage.from("item-photos").upload(newPath, blob, { contentType: "image/jpeg" });
+    if (upErr) { setError(upErr.message); return; }
+    const oldPath = editing.storage_path;
+    const { error: dbErr } = await supabase.from("item_photos").update({ storage_path: newPath }).eq("id", editing.id);
+    if (dbErr) { setError(dbErr.message); return; }
+    await supabase.storage.from("item-photos").remove([oldPath]);
+    setEditing(null);
+    setNote("Photo updated.");
+    await load();
+  }
+
   async function remove(p: Photo) {
     setError(null); setNote(null);
     await supabase.storage.from("item-photos").remove([p.storage_path]);
@@ -128,6 +147,10 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
                   className="grid h-8 w-8 place-items-center rounded-md border border-line hover:bg-paper-sunk disabled:opacity-40">
                   <ArrowRight size={15} />
                 </button>
+                <button onClick={() => setEditing(p)} disabled={busy}
+                  className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60">
+                  <Pencil size={13} /> Edit
+                </button>
                 <button onClick={() => setCover(p)} disabled={busy}
                   className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60">
                   <Star size={13} /> Set as cover
@@ -141,6 +164,10 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
             </div>
           ))}
         </div>
+      )}
+
+      {editing && editing.url && (
+        <ImageEditor src={editing.url} onSave={applyEdit} onClose={() => setEditing(null)} />
       )}
     </div>
   );
