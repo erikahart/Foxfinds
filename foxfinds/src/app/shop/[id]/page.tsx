@@ -34,7 +34,7 @@ export default async function ShopItemPage({ params }: { params: Promise<{ id: s
   let extraUrls: string[] = [];
   const { data: extras } = await admin
     .from("item_photos").select("storage_path").eq("item_id", id).order("position", { ascending: true });
-  const extraPaths = (extras ?? []).map((e) => (e as { storage_path: string }).storage_path);
+  const extraPaths = (extras ?? []).map((e) => (e as { storage_path: string }).storage_path).filter((p) => p !== item.image_path);
   if (extraPaths.length) {
     const { data: signedExtras } = await admin.storage.from("item-photos").createSignedUrls(extraPaths, 3600);
     extraUrls = (signedExtras ?? []).map((s) => s.signedUrl).filter((u): u is string => !!u);

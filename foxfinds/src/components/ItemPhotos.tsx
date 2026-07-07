@@ -1,15 +1,17 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X, ArrowLeft, ArrowRight, Star } from "lucide-react";
 
-type Photo = { id: string; storage_path: string; url: string };
+type Photo = { id: string; storage_path: string; position: number; url: string };
 
 export default function ItemPhotos({ itemId }: { itemId: string }) {
   const supabase = createClient();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -23,24 +25,21 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
       .eq("item_id", itemId)
       .order("position", { ascending: true })
       .order("created_at", { ascending: true });
-    const rows = data ?? [];
-    const paths = rows.map((r) => (r as { storage_path: string }).storage_path);
+    const rows = (data ?? []) as { id: string; storage_path: string; position: number }[];
+    const paths = rows.map((r) => r.storage_path);
     const urls: Record<string, string> = {};
     if (paths.length) {
       const { data: signed } = await supabase.storage.from("item-photos").createSignedUrls(paths, 3600);
       signed?.forEach((s) => { if (s.path && s.signedUrl) urls[s.path] = s.signedUrl; });
     }
-    setPhotos(rows.map((r) => {
-      const row = r as { id: string; storage_path: string };
-      return { id: row.id, storage_path: row.storage_path, url: urls[row.storage_path] ?? "" };
-    }));
+    setPhotos(rows.map((r) => ({ id: r.id, storage_path: r.storage_path, position: r.position, url: urls[r.storage_path] ?? "" })));
     setLoading(false);
   }
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setUploading(true); setError(null);
+    setUploading(true); setError(null); setNote(null);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Please sign in again."); setUploading(false); return; }
 
@@ -59,8 +58,27 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
     setUploading(false);
   }
 
+  async function move(index: number, dir: -1 | 1) {
+    const target = index + dir;
+    if (target < 0 || target >= photos.length) return;
+    setBusy(true); setError(null); setNote(null);
+    const a = photos[index], b = photos[target];
+    await supabase.from("item_photos").update({ position: b.position }).eq("id", a.id);
+    await supabase.from("item_photos").update({ position: a.position }).eq("id", b.id);
+    await load();
+    setBusy(false);
+  }
+
+  async function setCover(p: Photo) {
+    setBusy(true); setError(null); setNote(null);
+    const { error: err } = await supabase.from("items").update({ image_path: p.storage_path }).eq("id", itemId);
+    setBusy(false);
+    if (err) { setError(err.message); return; }
+    setNote("Cover updated — reload to see it in grids and the shop.");
+  }
+
   async function remove(p: Photo) {
-    setError(null);
+    setError(null); setNote(null);
     await supabase.storage.from("item-photos").remove([p.storage_path]);
     const { error: delErr } = await supabase.from("item_photos").delete().eq("id", p.id);
     if (delErr) { setError(delErr.message); return; }
@@ -74,7 +92,7 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
         <button
           onClick={() => fileRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || busy}
           className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60"
         >
           {uploading ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Add photos
@@ -82,6 +100,7 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
       </div>
 
       {error && <p className="mb-2 text-sm text-ember">{error}</p>}
+      {note && <p className="mb-2 text-sm text-moss">{note}</p>}
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-ink-muted"><Loader2 className="animate-spin" size={15} /> Loading…</div>
@@ -90,19 +109,34 @@ export default function ItemPhotos({ itemId }: { itemId: string }) {
           No extra photos yet. Add a few angles to help buyers.
         </p>
       ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {photos.map((p) => (
-            <div key={p.id} className="group relative aspect-square overflow-hidden rounded-lg border border-line bg-paper-sunk">
-              {p.url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.url} alt="" className="h-full w-full object-cover" />
-              ) : null}
-              <button
-                onClick={() => remove(p)}
-                aria-label="Remove photo"
-                className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-ink/70 text-paper opacity-0 transition-opacity hover:bg-ink group-hover:opacity-100"
-              >
-                <X size={13} />
+        <div className="space-y-2">
+          {photos.map((p, i) => (
+            <div key={p.id} className="flex items-center gap-3 rounded-lg border border-line bg-paper-raised p-2">
+              <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-paper-sunk">
+                {p.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.url} alt="" className="h-full w-full object-cover" />
+                ) : null}
+              </div>
+
+              <div className="flex flex-1 flex-wrap items-center gap-1.5">
+                <button onClick={() => move(i, -1)} disabled={busy || i === 0} aria-label="Move left"
+                  className="grid h-8 w-8 place-items-center rounded-md border border-line hover:bg-paper-sunk disabled:opacity-40">
+                  <ArrowLeft size={15} />
+                </button>
+                <button onClick={() => move(i, 1)} disabled={busy || i === photos.length - 1} aria-label="Move right"
+                  className="grid h-8 w-8 place-items-center rounded-md border border-line hover:bg-paper-sunk disabled:opacity-40">
+                  <ArrowRight size={15} />
+                </button>
+                <button onClick={() => setCover(p)} disabled={busy}
+                  className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-xs hover:border-fox hover:bg-fox-tint disabled:opacity-60">
+                  <Star size={13} /> Set as cover
+                </button>
+              </div>
+
+              <button onClick={() => remove(p)} disabled={busy} aria-label="Remove photo"
+                className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-md text-ink-muted hover:bg-ember-tint hover:text-ember disabled:opacity-60">
+                <X size={16} />
               </button>
             </div>
           ))}
