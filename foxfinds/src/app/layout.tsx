@@ -1,10 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import PWARegister from "@/components/PWARegister";
 
 export const metadata: Metadata = {
   title: "Fox Finds — resell your storage-unit finds",
   description:
     "Snap a photo, let AI identify and price the find, and generate listings for every marketplace.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Fox Finds", statusBarStyle: "default" },
+  icons: { icon: "/favicon.png", apple: "/icon-180.png" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#211E1A",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        {children}
+        <PWARegister />
+      </body>
     </html>
   );
 }
