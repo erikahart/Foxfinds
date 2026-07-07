@@ -5,9 +5,10 @@ export const CATEGORIES = [
   "Tools",
   "Electronics",
   "Collectibles",
-  "Vintage",
+  "Vintage/Antique",
   "Kitchen",
   "Clothing",
+  "Jewelry",
 ];
 
 // Shop browse buttons: the categories above plus two smart filters.
