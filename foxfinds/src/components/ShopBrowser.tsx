@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { money } from "@/lib/format";
-import { SHOP_FILTERS } from "@/lib/categories";
+import { CATEGORIES } from "@/lib/categories";
 
 type ShopItem = {
   id: string;
@@ -36,12 +36,23 @@ export default function ShopBrowser({
   const reserved = new Set(reservedIds);
   const shown = items.filter((i) => matches(i, filter));
 
+  // Build the filter bar from the standard categories PLUS any custom ones in use.
+  const inUse = new Set<string>();
+  items.forEach((i) => {
+    if (i.category) inUse.add(i.category);
+    (i.categories ?? []).forEach((c) => { if (c) inUse.add(c); });
+  });
+  const customInUse = Array.from(inUse)
+    .filter((c) => !CATEGORIES.includes(c))
+    .sort((a, b) => a.localeCompare(b));
+  const filters = ["All", ...CATEGORIES, ...customInUse, "New Arrivals", "Under $25"];
+
   return (
     <>
       {/* Filter buttons — horizontally scrollable on small screens */}
       <div className="mt-6 -mx-6 overflow-x-auto px-6">
         <div className="flex gap-2 pb-1">
-          {SHOP_FILTERS.map((f) => (
+          {filters.map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
