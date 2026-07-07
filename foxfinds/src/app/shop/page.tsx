@@ -2,9 +2,9 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { money } from "@/lib/format";
 import { getSellerLogoUrl } from "@/lib/brand";
+import ShopBrowser from "@/components/ShopBrowser";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 type ShopItem = {
   id: string;
@@ -15,6 +15,7 @@ type ShopItem = {
   description: string | null;
   suggested_price: number | null;
   image_path: string | null;
+  created_at: string;
 };
 
 async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, string>; reserved: Set<string> }> {
@@ -25,6 +26,7 @@ async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, st
   let admin;
   try { admin = createAdminClient(); } catch { return { items, urls, reserved }; }
 
+  // Items — the essential fetch. If this fails, there's nothing to show.
   try {
     const { data } = await admin
       .from("items")
@@ -36,6 +38,7 @@ async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, st
     return { items, urls, reserved };
   }
 
+  // Photos — never let a signing hiccup blank the grid.
   try {
     const paths = items.map((i) => i.image_path).filter((p): p is string => !!p);
     if (paths.length) {
@@ -44,6 +47,7 @@ async function getListed(): Promise<{ items: ShopItem[]; urls: Record<string, st
     }
   } catch { /* show items without photos rather than nothing */ }
 
+  // Reservations — never let this blank the grid either.
   try {
     if (items.length) {
       const { data: res } = await admin
@@ -88,31 +92,7 @@ export default async function ShopPage() {
             Nothing available right now — check back soon.
           </div>
         ) : (
-          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
-            {items.map((i) => (
-              <Link key={i.id} href={`/shop/${i.id}`} className="group block overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card transition-colors hover:border-line-strong">
-                <div className="relative aspect-square bg-paper-sunk">
-                  {i.image_path && urls[i.image_path] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={urls[i.image_path]} alt={i.title} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="grid h-full place-items-center text-ink-muted">No photo</div>
-                  )}
-                  {reserved.has(i.id) && (
-                    <span className="absolute left-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-xs font-medium text-paper">Reserved</span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-medium leading-snug">{i.title}</h2>
-                    <div className="font-display text-xl font-semibold">{money(i.suggested_price)}</div>
-                  </div>
-                  {i.condition && <div className="mt-1 text-xs uppercase tracking-wide text-fox-deep">{i.condition}</div>}
-                  {i.description && <p className="mt-2 line-clamp-3 text-sm text-ink-muted">{i.description}</p>}
-                </div>
-              </Link>
-            ))}
-          </div>
+          <ShopBrowser items={items} urls={urls} reservedIds={Array.from(reserved)} />
         )}
       </section>
 

@@ -8,6 +8,7 @@ import { money } from "@/lib/format";
 import { ArrowLeft, Check, Trash2, Loader2 } from "lucide-react";
 import ItemPhotos from "@/components/ItemPhotos";
 import CoverPhoto from "@/components/CoverPhoto";
+import { CATEGORIES } from "@/lib/categories";
 
 const inp =
   "w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm outline-none focus:border-fox focus:ring-2 focus:ring-fox/20";
@@ -41,9 +42,8 @@ export default function ItemDetailPage() {
       setSoldPrice(it.sold_price != null ? String(it.sold_price) : "");
       const { data: cats } = await supabase.from("items").select("category");
       if (active) {
-        const distinct = Array.from(
-          new Set((cats ?? []).map((c) => (c as { category: string | null }).category).filter((v): v is string => !!v && v.trim() !== "")),
-        ).sort();
+        const existing = (cats ?? []).map((c) => (c as { category: string | null }).category).filter((v): v is string => !!v && v.trim() !== "");
+        const distinct = Array.from(new Set([...CATEGORIES, ...existing]));
         setCategories(distinct);
       }
       setLoading(false);
