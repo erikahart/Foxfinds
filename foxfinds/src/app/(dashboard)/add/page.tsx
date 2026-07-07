@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { CATEGORIES } from "@/lib/categories";
 import type { Analysis } from "@/types";
 import { Upload, Sparkles, RotateCcw, Check } from "lucide-react";
 
@@ -19,6 +20,7 @@ export default function AddFindPage() {
   const [a, setA] = useState<Analysis | null>(null);
   const [cost, setCost] = useState("");
   const [unit, setUnit] = useState("");
+  const [customCat, setCustomCat] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -42,7 +44,9 @@ export default function AddFindPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Analysis failed");
-      setA(json.analysis);
+      // Ignore the AI's category — you choose it yourself below.
+      setA({ ...json.analysis, category: "" });
+      setCustomCat(false);
       setPhase("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed");
@@ -52,6 +56,11 @@ export default function AddFindPage() {
 
   async function save() {
     if (!a || !file || !userId) return;
+    const category = (a.category ?? "").trim();
+    if (!category) {
+      setError("Please pick a category before saving.");
+      return;
+    }
     setPhase("saving");
     setError(null);
     try {
@@ -63,7 +72,7 @@ export default function AddFindPage() {
       const { error: insErr } = await supabase.from("items").insert({
         user_id: userId,
         title: a.title,
-        category: a.category,
+        category,
         brand: a.brand,
         condition: a.condition,
         description: a.description,
@@ -87,7 +96,7 @@ export default function AddFindPage() {
 
   function reset() {
     setFile(null); setPreview(null); setA(null); setPhase("idle");
-    setError(null); setCost(""); setUnit("");
+    setError(null); setCost(""); setUnit(""); setCustomCat(false);
   }
 
   return (
@@ -139,7 +148,7 @@ export default function AddFindPage() {
         <div>
           {phase === "idle" && !a && (
             <div className="rounded-xl2 border border-line bg-paper-raised p-6 text-sm text-ink-muted shadow-card">
-              Upload a photo and the AI will identify the item, estimate its resale value, and draft a description you can edit before saving.
+              Upload a photo and the AI will identify the item, estimate its resale value, and draft a description you can edit before saving. You&rsquo;ll pick the category yourself.
             </div>
           )}
 
@@ -154,7 +163,29 @@ export default function AddFindPage() {
             <div className="space-y-4 rounded-xl2 border border-line bg-paper-raised p-6 shadow-card">
               <Row label="Title"><input className={inp} value={a.title} onChange={(e) => setA({ ...a, title: e.target.value })} /></Row>
               <div className="grid grid-cols-2 gap-3">
-                <Row label="Category"><input className={inp} value={a.category} onChange={(e) => setA({ ...a, category: e.target.value })} /></Row>
+                <Row label="Category">
+                  <select
+                    className={inp}
+                    value={customCat ? "__new__" : (a.category || "")}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "__new__") { setCustomCat(true); setA({ ...a, category: "" }); }
+                      else { setCustomCat(false); setA({ ...a, category: v }); }
+                    }}
+                  >
+                    <option value="" disabled>Select a category…</option>
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    <option value="__new__">+ Add new…</option>
+                  </select>
+                  {customCat && (
+                    <input
+                      className={`${inp} mt-2`}
+                      placeholder="New category name"
+                      value={a.category}
+                      onChange={(e) => setA({ ...a, category: e.target.value })}
+                    />
+                  )}
+                </Row>
                 <Row label="Brand"><input className={inp} value={a.brand ?? ""} onChange={(e) => setA({ ...a, brand: e.target.value })} /></Row>
               </div>
               <div className="grid grid-cols-3 gap-3">
