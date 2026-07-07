@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Check, Mail, KeyRound } from "lucide-react";
+import FulfillmentNotice from "@/components/FulfillmentNotice";
+import DeliveryChecker from "@/components/DeliveryChecker";
 
 export default function ReserveBox({
   itemId, itemTitle, alreadyReserved,
@@ -13,6 +15,7 @@ export default function ReserveBox({
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
+  const [fulfillment, setFulfillment] = useState("");
   const [phase, setPhase] = useState<"idle" | "sending" | "code" | "verifying" | "reserving" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +41,7 @@ export default function ReserveBox({
     e.preventDefault();
     setPhase("verifying"); setError(null);
     const token = code.trim();
+    // New reservers verify as "signup"; returning ones as "email". Try both.
     let res = await supabase.auth.verifyOtp({ email: emailInput, token, type: "email" });
     if (res.error) {
       res = await supabase.auth.verifyOtp({ email: emailInput, token, type: "signup" });
@@ -57,7 +61,7 @@ export default function ReserveBox({
       customer_id: user.id,
       customer_email: user.email,
       customer_name: name || null,
-      pickup_note: note || null,
+      pickup_note: [fulfillment, note].filter(Boolean).join(" — ") || null,
       status: "pending",
     });
     if (error) { setError(error.message); setPhase("idle"); return; }
@@ -85,10 +89,13 @@ export default function ReserveBox({
     );
   }
 
+  // Signed in → reserve form
   if (email) {
     return (
       <div className="space-y-3 rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
         <div className="text-sm text-ink-muted">Reserving as <span className="font-medium text-ink">{email}</span></div>
+        <FulfillmentNotice />
+        <DeliveryChecker onResult={setFulfillment} />
         <input className={inp} placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
         <textarea className={`${inp} min-h-[72px] resize-y`} placeholder="Pickup notes (optional) — e.g. best times to grab it" value={note} onChange={(e) => setNote(e.target.value)} />
         {error && <p className="text-sm text-ember">{error}</p>}
@@ -99,6 +106,7 @@ export default function ReserveBox({
     );
   }
 
+  // Enter the emailed code
   if (phase === "code" || phase === "verifying") {
     return (
       <form onSubmit={verifyCode} className="space-y-3 rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
@@ -116,6 +124,7 @@ export default function ReserveBox({
     );
   }
 
+  // Enter email
   return (
     <form onSubmit={sendCode} className="space-y-3 rounded-xl2 border border-line bg-paper-raised p-5 shadow-card">
       <div className="text-sm font-medium">Reserve this for pickup</div>

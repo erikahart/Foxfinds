@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { money } from "@/lib/format";
 import { getSellerLogoUrl } from "@/lib/brand";
 import ShopBrowser from "@/components/ShopBrowser";
+import FulfillmentNotice from "@/components/FulfillmentNotice";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,8 @@ export default async function ShopPage() {
         <p className="mt-2 max-w-xl text-ink-muted">
           One-of-a-kind finds, ready for pickup. Browse what&rsquo;s available today.
         </p>
+
+        <FulfillmentNotice className="mt-5" />
 
         {items.length === 0 ? (
           <div className="mt-10 rounded-xl2 border border-dashed border-line-strong bg-paper-raised p-12 text-center text-ink-muted">

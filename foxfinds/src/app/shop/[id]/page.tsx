@@ -7,6 +7,8 @@ import ChatBox from "@/components/ChatBox";
 import { ArrowLeft } from "lucide-react";
 import { getSellerLogoUrl } from "@/lib/brand";
 import ShopGallery from "@/components/ShopGallery";
+import FulfillmentNotice from "@/components/FulfillmentNotice";
+import DeliveryChecker from "@/components/DeliveryChecker";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -80,7 +82,13 @@ export default async function ShopItemPage({ params }: { params: Promise<{ id: s
             </div>
             {item.description && <p className="mt-4 whitespace-pre-line text-ink-soft">{item.description}</p>}
 
-            <div className="mt-6">
+            <FulfillmentNotice className="mt-6" />
+
+            <div className="mt-3">
+              <DeliveryChecker />
+            </div>
+
+            <div className="mt-4">
               <ReserveBox itemId={item.id} itemTitle={item.title} alreadyReserved={reserved} />
             </div>
 
