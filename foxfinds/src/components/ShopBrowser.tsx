@@ -63,7 +63,7 @@ export default function ShopBrowser({
         <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
           {shown.map((i) => (
             <Link key={i.id} href={`/shop/${i.id}`} className="group block overflow-hidden rounded-xl2 border border-line bg-paper-raised shadow-card transition-colors hover:border-line-strong">
-              <div className="relative aspect-square bg-paper-sunk">
+              <div className="relative aspect-[4/5] bg-paper-sunk">
                 {i.image_path && urls[i.image_path] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={urls[i.image_path]} alt={i.title} className="h-full w-full object-cover" />
