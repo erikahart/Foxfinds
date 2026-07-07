@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Item, ItemStatus } from "@/types";
 import { money } from "@/lib/format";
 import { ArrowLeft, Check, Trash2, Loader2 } from "lucide-react";
+import ItemPhotos from "@/components/ItemPhotos";
 
 const inp =
   "w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm outline-none focus:border-fox focus:ring-2 focus:ring-fox/20";
@@ -126,6 +127,7 @@ export default function ItemDetailPage() {
               <div className="grid h-full place-items-center text-ink-muted">No photo</div>
             )}
           </div>
+          <ItemPhotos itemId={item.id} />
         </div>
 
         <div className="space-y-4">

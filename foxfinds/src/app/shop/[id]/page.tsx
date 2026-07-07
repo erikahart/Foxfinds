@@ -6,6 +6,7 @@ import ReserveBox from "@/components/ReserveBox";
 import ChatBox from "@/components/ChatBox";
 import { ArrowLeft } from "lucide-react";
 import { getSellerLogoUrl } from "@/lib/brand";
+import ShopGallery from "@/components/ShopGallery";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,6 +29,17 @@ export default async function ShopItemPage({ params }: { params: Promise<{ id: s
     const { data: signed } = await admin.storage.from("item-photos").createSignedUrl(item.image_path, 3600);
     photo = signed?.signedUrl ?? null;
   }
+
+  // Additional photos for the gallery
+  let extraUrls: string[] = [];
+  const { data: extras } = await admin
+    .from("item_photos").select("storage_path").eq("item_id", id).order("position", { ascending: true });
+  const extraPaths = (extras ?? []).map((e) => (e as { storage_path: string }).storage_path);
+  if (extraPaths.length) {
+    const { data: signedExtras } = await admin.storage.from("item-photos").createSignedUrls(extraPaths, 3600);
+    extraUrls = (signedExtras ?? []).map((s) => s.signedUrl).filter((u): u is string => !!u);
+  }
+  const galleryUrls = [photo, ...extraUrls].filter((u): u is string => !!u);
 
   const { data: active } = await admin
     .from("reservations")
@@ -57,14 +69,7 @@ export default async function ShopItemPage({ params }: { params: Promise<{ id: s
         </Link>
 
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="overflow-hidden rounded-xl2 border border-line bg-paper-sunk">
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt={item.title} className="w-full object-cover" />
-            ) : (
-              <div className="grid aspect-square place-items-center text-ink-muted">No photo</div>
-            )}
-          </div>
+          <ShopGallery urls={galleryUrls} title={item.title} />
 
           <div>
             {item.category && <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fox-deep">{item.category}</p>}
